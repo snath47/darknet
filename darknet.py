@@ -31,6 +31,8 @@ from ctypes import *
 import math
 import random
 import os
+import json
+from pathlib import Path
 
 def sample(probs):
     s = sum(probs)
@@ -402,6 +404,26 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     # Do the detection
     #detections = detect(netMain, metaMain, imagePath, thresh)	# if is used cv2.imread(image)
     detections = detect(netMain, metaMain, imagePath.encode("ascii"), thresh)
+    data = {"predictions":[]}
+    for detection in detections:
+        bounds = detection[2]
+        yExtent = int(bounds[3])
+        xEntent = int(bounds[2])
+        # Coordinates are around the center
+        xCoord = int(bounds[0] - bounds[2]/2)
+        yCoord = int(bounds[1] - bounds[3]/2)
+        bbox={}
+        bbox["x"] = xCoord + (xEntent/2)
+        bbox["y"] = yCoord + (yExtent/2)
+        bbox["width"] = xEntent
+        bbox["height"] = yExtent
+        bbox["class"] = detection[0]
+        bbox["confidence"] = detection[1]
+        data["predictions"].append(bbox)
+    jsonpath = "/content/Results"
+    jsonpath = os.path.join(jsonpath, Path(imagePath).stem + ".json")
+    with open(jsonpath, 'w') as f:
+        json.dump(data, f)
     if showImage:
         try:
             from skimage import io, draw
